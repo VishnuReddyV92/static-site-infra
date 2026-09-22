@@ -6,13 +6,11 @@ on:
     paths:
       - 'terraform/**'
       - 'site/**'
-      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
       - 'terraform/**'
       - 'site/**'
-      - '.github/workflows/**'
 
 permissions:
   id-token: write     # required for Azure OIDC
@@ -20,13 +18,13 @@ permissions:
   pull-requests: write # required to post plan as PR comment
 
 env:
-  TF_CLOUD_ORGANIZATION: \${{ vars.TFC_ORGANIZATION }}
-  TF_WORKSPACE: \${{ vars.TFC_WORKSPACE }}
-  TF_API_TOKEN: \${{ secrets.TF_API_TOKEN }}
+  TF_CLOUD_ORGANIZATION: ${{ vars.TFC_ORGANIZATION }}
+  TF_WORKSPACE: ${{ vars.TFC_WORKSPACE }}
+  TF_API_TOKEN: ${{ secrets.TF_API_TOKEN }}
   ARM_USE_OIDC: true
-  ARM_CLIENT_ID: \${{ vars.AZURE_CLIENT_ID }}
-  ARM_TENANT_ID: \${{ vars.AZURE_TENANT_ID }}
-  ARM_SUBSCRIPTION_ID: \${{ vars.AZURE_SUBSCRIPTION_ID }}
+  ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+  ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+  ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
 jobs:
   terraform-plan:
@@ -41,14 +39,14 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: \${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: \${{ vars.AZURE_TENANT_ID }}
-          subscription-id: \${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: \${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Init
         run: terraform init
@@ -57,12 +55,11 @@ jobs:
         id: plan
         run: |
           terraform plan \
-            -var="azure_subscription_id=\${{ vars.AZURE_SUBSCRIPTION_ID }}" \
-            -var="azure_client_id=\${{ vars.AZURE_CLIENT_ID }}" \
-            -var="azure_tenant_id=\${{ vars.AZURE_TENANT_ID }}" \
+            -var="azure_subscription_id=${{ vars.AZURE_SUBSCRIPTION_ID }}" \
+            -var="azure_client_id=${{ vars.AZURE_CLIENT_ID }}" \
+            -var="azure_tenant_id=${{ vars.AZURE_TENANT_ID }}" \
             -no-color -out=tfplan
           terraform show -no-color tfplan > plan_output.txt
-
       - name: Post Plan as PR Comment
         uses: actions/github-script@v7
         with:
@@ -75,7 +72,6 @@ jobs:
               repo: context.repo.repo,
               body: `### Terraform Plan\n\`\`\`\n${plan}\n\`\`\``
             });
-
   terraform-apply-and-deploy:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
@@ -88,14 +84,14 @@ jobs:
       - name: Azure Login (OIDC)
         uses: azure/login@v2
         with:
-          client-id: \${{ vars.AZURE_CLIENT_ID }}
-          tenant-id: \${{ vars.AZURE_TENANT_ID }}
-          subscription-id: \${{ vars.AZURE_SUBSCRIPTION_ID }}
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v3
         with:
-          cli_config_credentials_token: \${{ secrets.TF_API_TOKEN }}
+          cli_config_credentials_token: ${{ secrets.TF_API_TOKEN }}
 
       - name: Terraform Init
         run: terraform init
@@ -103,33 +99,29 @@ jobs:
       - name: Terraform Apply
         run: |
           terraform apply -auto-approve \
-            -var="azure_subscription_id=\${{ vars.AZURE_SUBSCRIPTION_ID }}" \
-            -var="azure_client_id=\${{ vars.AZURE_CLIENT_ID }}" \
-            -var="azure_tenant_id=\${{ vars.AZURE_TENANT_ID }}"
-
+            -var="azure_subscription_id=${{ vars.AZURE_SUBSCRIPTION_ID }}" \
+            -var="azure_client_id=${{ vars.AZURE_CLIENT_ID }}" \
+            -var="azure_tenant_id=${{ vars.AZURE_TENANT_ID }}"
       - name: Get Storage Account Name
         id: tf-outputs
         run: |
-          echo "storage_account=\((terraform output -raw storage_account_name)" >> "\)GITHUB_OUTPUT"
-          echo "cdn_url=\((terraform output -raw cdn_endpoint_url)" >> "\)GITHUB_OUTPUT"
-
-      - name: Upload Site Files to \$web Container
+          echo "storage_account=$(terraform output -raw storage_account_name)" >> "$GITHUB_OUTPUT"
+          echo "cdn_url=$(terraform output -raw cdn_endpoint_url)" >> "$GITHUB_OUTPUT"
+      - name: Upload Site Files to $web Container
         working-directory: .
         run: |
           az storage blob upload-batch \
-            --account-name \${{ steps.tf-outputs.outputs.storage_account }}  \
-            --auth-mode key \
+            --account-name ${{ steps.tf-outputs.outputs.storage_account }}  \
+            --auth-mode login \
             -s site \
-            -d '\$web' \
+            -d '$web' \
             --overwrite
-
       - name: Purge Front Door Cache
         run: |
           az afd endpoint purge \
-            --resource-group \$(cd terraform && terraform output -raw resource_group_name) \
+            --resource-group $(cd terraform && terraform output -raw resource_group_name) \
             --profile-name fd-staticsite-prod \
-            --endpoint-name \$(cd terraform && terraform output -raw cdn_endpoint_url | sed -E 's|https://||; s|\..*||') \
+            --endpoint-name $(cd terraform && terraform output -raw cdn_endpoint_url | sed -E 's|https://||; s|\..*||') \
             --content-paths "/*"
-
       - name: Print Site URL
-        run: echo "Live at \${{ steps.tf-outputs.outputs.cdn_url }}"
+        run: echo "Live at ${{ steps.tf-outputs.outputs.cdn_url }}"
