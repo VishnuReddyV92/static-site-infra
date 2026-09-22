@@ -121,12 +121,12 @@ jobs:
             -d '$web' \
             --overwrite
 
-      - name: Purge CDN Cache
+      - name: Purge Front Door Cache
         run: |
-          az cdn endpoint purge \
+          az afd endpoint purge \
             --resource-group $(cd terraform && terraform output -raw resource_group_name) \
-            --profile-name cdn-staticsite-prod \
-            --name $(cd terraform && terraform output -raw cdn_endpoint_url | sed -E 's|https://||; s|\..*||') \
+            --profile-name fd-staticsite-prod \
+            --endpoint-name $(cd terraform && terraform output -raw cdn_endpoint_url | sed -E 's|https://||; s|\..*||') \
             --content-paths "/*"
 
       - name: Print Site URL
