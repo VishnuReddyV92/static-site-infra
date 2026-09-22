@@ -6,11 +6,13 @@ on:
     paths:
       - 'terraform/**'
       - 'site/**'
+      - '.github/workflows/**'
   push:
     branches: [main]
     paths:
       - 'terraform/**'
       - 'site/**'
+      - '.github/workflows/**'
 
 permissions:
   id-token: write     # required for Azure OIDC
