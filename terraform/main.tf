@@ -1,4 +1,4 @@
-resource "random_string" "suffix" {
+/* resource "random_string" "suffix" {
   length  = 6
   special = false
   upper   = false
@@ -70,4 +70,4 @@ resource "azurerm_cdn_frontdoor_route" "site" {
   forwarding_protocol     = "HttpsOnly"
   https_redirect_enabled  = true
   link_to_default_domain  = true
-}
+} */

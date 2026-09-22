@@ -9,7 +9,7 @@ variable "azure_client_id" {
 variable "azure_tenant_id" {
   type = string
 }
-
+/*
 variable "project_name" {
   type    = string
   default = "staticsite"
@@ -24,3 +24,4 @@ variable "location" {
   type    = string
   default = "eastus"
 }
+*/
