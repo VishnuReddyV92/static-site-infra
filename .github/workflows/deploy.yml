@@ -96,9 +96,9 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Apply
+      - name: Terraform Destroy
         run: |
-          terraform apply -auto-approve \
+          terraform destroy -auto-approve \
             -var="azure_subscription_id=${{ vars.AZURE_SUBSCRIPTION_ID }}" \
             -var="azure_client_id=${{ vars.AZURE_CLIENT_ID }}" \
             -var="azure_tenant_id=${{ vars.AZURE_TENANT_ID }}"
